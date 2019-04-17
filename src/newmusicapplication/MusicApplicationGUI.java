@@ -6,18 +6,24 @@
 package newmusicapplication;
 
 import java.awt.Component;
+import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseListener;
 import java.io.File;
 import java.io.FileFilter;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Spliterator;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.DefaultListModel;
 import javax.swing.JFileChooser;
 import javax.swing.JProgressBar;
 import javax.swing.ListSelectionModel;
 import javax.swing.event.ListSelectionListener;
+import javax.swing.event.TableModelEvent;
+import javax.swing.event.TableModelListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableModel;
 
@@ -32,6 +38,7 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
     DefaultTableModel playlistModel;
     AlbumCollection ac = new AlbumCollection();
     MP3Player mp3 = new MP3Player();
+    boolean songFinished = false;
 
     /**
      * Creates new form MusicApplicationGUI
@@ -45,11 +52,11 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
         selectedAlbumSongs.setDefaultEditor(Object.class, null);
         selectedAlbumSongs.getColumnModel().getColumn(0).setPreferredWidth(350);
 
-        
         playlistModel = (DefaultTableModel) playlistTable.getModel();
         playlistTable.setRowSelectionAllowed(true);
         playlistTable.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
 
+       
     }
 
     /**
@@ -63,15 +70,15 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
 
         jScrollPane1 = new javax.swing.JScrollPane();
         albumsTable = new javax.swing.JTable();
-        jButton1 = new javax.swing.JButton();
+        LoadAlbumCollection = new javax.swing.JButton();
         jScrollPane2 = new javax.swing.JScrollPane();
         selectedAlbumSongs = new javax.swing.JTable();
         jPanel1 = new javax.swing.JPanel();
         jScrollPane3 = new javax.swing.JScrollPane();
         playlistTable = new javax.swing.JTable();
-        jButton2 = new javax.swing.JButton();
+        AddSongToPlaylist = new javax.swing.JButton();
         removeSongFromPlaylist = new javax.swing.JButton();
-        jButton4 = new javax.swing.JButton();
+        playPlaylist = new javax.swing.JButton();
         playButton = new javax.swing.JButton();
         jButton5 = new javax.swing.JButton();
         jButton6 = new javax.swing.JButton();
@@ -93,17 +100,17 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
             }
         ));
         albumsTable.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                albumsTableMouseClicked(evt);
+            public void mousePressed(java.awt.event.MouseEvent evt) {
+                albumsTableMousePressed(evt);
             }
         });
         jScrollPane1.setViewportView(albumsTable);
 
-        jButton1.setFont(new java.awt.Font("Tahoma", 0, 14)); // NOI18N
-        jButton1.setText("Load Album Collection");
-        jButton1.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                jButton1MouseClicked(evt);
+        LoadAlbumCollection.setFont(new java.awt.Font("Tahoma", 0, 14)); // NOI18N
+        LoadAlbumCollection.setText("Load Album Collection");
+        LoadAlbumCollection.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mousePressed(java.awt.event.MouseEvent evt) {
+                LoadAlbumCollectionMousePressed(evt);
             }
         });
 
@@ -139,17 +146,17 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
             }
         ));
         playlistTable.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                playlistTableMouseClicked(evt);
+            public void mousePressed(java.awt.event.MouseEvent evt) {
+                playlistTableMousePressed(evt);
             }
         });
         jScrollPane3.setViewportView(playlistTable);
 
-        jButton2.setFont(new java.awt.Font("Tahoma", 0, 14)); // NOI18N
-        jButton2.setText("Add to Playlist");
-        jButton2.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                jButton2MouseClicked(evt);
+        AddSongToPlaylist.setFont(new java.awt.Font("Tahoma", 0, 14)); // NOI18N
+        AddSongToPlaylist.setText("Add to Playlist");
+        AddSongToPlaylist.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mousePressed(java.awt.event.MouseEvent evt) {
+                AddSongToPlaylistMousePressed(evt);
             }
         });
 
@@ -159,13 +166,16 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 removeSongFromPlaylistMouseClicked(evt);
             }
+            public void mousePressed(java.awt.event.MouseEvent evt) {
+                removeSongFromPlaylistMousePressed(evt);
+            }
         });
 
-        jButton4.setFont(new java.awt.Font("Tahoma", 0, 14)); // NOI18N
-        jButton4.setText("Play Playlist");
-        jButton4.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                jButton4MouseClicked(evt);
+        playPlaylist.setFont(new java.awt.Font("Tahoma", 0, 14)); // NOI18N
+        playPlaylist.setText("Play Playlist");
+        playPlaylist.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mousePressed(java.awt.event.MouseEvent evt) {
+                playPlaylistMousePressed(evt);
             }
         });
 
@@ -214,11 +224,11 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 300, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 200, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(LoadAlbumCollection, javax.swing.GroupLayout.PREFERRED_SIZE, 200, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(jButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 200, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(AddSongToPlaylist, javax.swing.GroupLayout.PREFERRED_SIZE, 200, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(52, 52, 52)
                         .addComponent(removeSongFromPlaylist, javax.swing.GroupLayout.PREFERRED_SIZE, 200, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addComponent(jScrollPane2, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
@@ -240,8 +250,8 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
                                 .addComponent(jButtonSkipTrack))
                             .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(currentlyPlaying, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
-                    .addComponent(jButton4, javax.swing.GroupLayout.PREFERRED_SIZE, 200, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(144, Short.MAX_VALUE))
+                    .addComponent(playPlaylist, javax.swing.GroupLayout.PREFERRED_SIZE, 200, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -270,21 +280,229 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jButton4, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(playPlaylist, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(removeSongFromPlaylist, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(327, 327, 327))
+                        .addGap(56, 56, 56))
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(jButton1, javax.swing.GroupLayout.PREFERRED_SIZE, 56, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addContainerGap(326, Short.MAX_VALUE))
+                        .addComponent(LoadAlbumCollection, javax.swing.GroupLayout.PREFERRED_SIZE, 56, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(jButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(AddSongToPlaylist, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(0, 0, Short.MAX_VALUE))))
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void jButton1MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jButton1MouseClicked
+    private void removeSongFromPlaylistMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_removeSongFromPlaylistMouseClicked
+
+    }//GEN-LAST:event_removeSongFromPlaylistMouseClicked
+
+    private void playButtonMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_playButtonMouseClicked
+        MouseListener mL = new MouseAdapter() {
+        };
+        if (evt.getClickCount() >= 0);
+        {
+
+            int rowIndex = playlistTable.getSelectedRow();
+            int colIndex = playlistTable.getSelectedColumn();
+            if (rowIndex >= 0 && colIndex >= 0) {
+
+                String mp3filename = playlistTable.getModel().getValueAt(rowIndex, 0) + ".mp3";
+
+                playlistTable.getValueAt(rowIndex, 0);
+                System.out.println(playlistTable.getValueAt(rowIndex, 0));
+                mp3filename = mp3filename.replaceAll("\\s+", "");
+
+                String currentFolder = System.getProperty("user.dir");
+
+                File songToPlay = new File(currentFolder + "/music/" + mp3filename);
+                String mp3File = songToPlay.getAbsolutePath();
+
+                //              String[] displayMp3Name = mp3filename.split(".mp3");
+                //               String displayName = displayMp3Name[0];
+                String displayName = (String) playlistTable.getModel().getValueAt(rowIndex, 0);
+                //System.out.println(mp3File);
+                mp3.close();
+                mp3.play(mp3File);
+                currentlyPlaying.setText("Now Playing: " + displayName);
+                playlistTable.addMouseListener(mL);
+                playlistTable.setModel(playlistModel);
+
+            }
+        }
+    }//GEN-LAST:event_playButtonMouseClicked
+
+    private void jButtonSkipTrackMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jButtonSkipTrackMouseClicked
+
+        try {
+
+            int rowIndex = playlistTable.getSelectedRow();
+            //int rowCheck = playlistTable.getRowCount();
+            int colIndex = playlistTable.getSelectedColumn();
+            if (rowIndex >= 0 && colIndex >= 0) {
+
+                String mp3filename = playlistTable.getModel().getValueAt(rowIndex + 1, 0) + ".mp3";
+                int previousSong = rowIndex;
+
+                playlistTable.setRowSelectionInterval(rowIndex + 1, 0);
+                playlistTable.getSelectionModel().removeSelectionInterval(previousSong, 0);
+                System.out.println(mp3filename);
+
+                mp3filename = mp3filename.replaceAll("\\s+", "");
+
+                String currentFolder = System.getProperty("user.dir");
+
+                File songToPlay = new File(currentFolder + "/music/" + mp3filename);
+                String mp3File = songToPlay.getAbsolutePath();
+                System.out.println(mp3File);
+                mp3.close();
+                mp3.play(mp3File);
+
+                //   String displayName = (String) playlistTable.getModel().getValueAt(rowIndex + 1,0);
+                String mp3DisplayName = (String) playlistTable.getModel().getValueAt(rowIndex + 1, 0);
+                currentlyPlaying.setText("Now Playing: " + mp3DisplayName);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+
+    }//GEN-LAST:event_jButtonSkipTrackMouseClicked
+
+    private void jButtonPreviousTrackMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jButtonPreviousTrackMouseClicked
+        try {
+
+            int rowIndex = playlistTable.getSelectedRow();
+            int colIndex = playlistTable.getSelectedColumn();
+            if (rowIndex >= 0 && colIndex >= 0) {
+
+                String mp3filename = playlistTable.getModel().getValueAt(rowIndex - 1, 0) + ".mp3";
+
+                int previousSong = rowIndex;
+
+                playlistTable.getSelectionModel().removeSelectionInterval(previousSong, 0);
+                playlistTable.setRowSelectionInterval(rowIndex - 1, 0);
+
+                mp3filename = mp3filename.replaceAll("\\s+", "");
+
+                String currentFolder = System.getProperty("user.dir");
+
+                File songToPlay = new File(currentFolder + "/music/" + mp3filename);
+                String mp3File = songToPlay.getAbsolutePath();
+                System.out.println(mp3File);
+                mp3.close();
+                mp3.play(mp3File);
+
+                String mp3DisplayName = (String) playlistTable.getModel().getValueAt(rowIndex - 1, 0);
+                currentlyPlaying.setText("Now Playing: " + mp3DisplayName);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }//GEN-LAST:event_jButtonPreviousTrackMouseClicked
+
+    private void albumsTableMousePressed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_albumsTableMousePressed
+
+        MouseListener mL = new MouseAdapter() {
+        };
+
+        if (evt.getClickCount() >= 0);
+        {
+            if (tracksModel.getRowCount() >= 0) {
+                tracksModel.setRowCount(0);
+
+            }
+
+            int rowIndex = albumsTable.getSelectedRow();
+            int colIndex = albumsTable.getSelectedColumn();
+            if (rowIndex >= 0) {
+                String selectedAlbum = (String) albumsTable.getModel().getValueAt(rowIndex, colIndex);
+
+                List<String> trackList = ac.getAlbumByHeader(selectedAlbum).getTrackList();
+
+                for (int i = 0; i < trackList.size(); i++) {
+
+                    String tracksToSplit = trackList.get(i);
+                    String[] trackInformation = tracksToSplit.split("-");
+                    String songDuration = trackInformation[0];
+                    String songName = trackInformation[1];
+
+                    tracksModel.insertRow(tracksModel.getRowCount(), new Object[]{songName, songDuration});
+
+                    System.out.println(songDuration);
+                }
+            }
+            selectedAlbumSongs.addMouseListener(mL);
+            selectedAlbumSongs.setModel(tracksModel);
+        }
+    }//GEN-LAST:event_albumsTableMousePressed
+
+    private void playlistTableMousePressed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_playlistTableMousePressed
+
+        int index = playlistTable.getSelectedRow();
+        String songName = (String) playlistTable.getModel().getValueAt(index, 0);
+        if (index >= 0) {
+            currentlyPlaying.setText("Selected: " + songName);
+        }
+
+
+    }//GEN-LAST:event_playlistTableMousePressed
+
+    private void AddSongToPlaylistMousePressed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_AddSongToPlaylistMousePressed
+        MouseListener mL = new MouseAdapter() {
+        };
+
+        if (evt.getClickCount() >= 0);
+        {
+
+            int rowIndex = selectedAlbumSongs.getSelectedRow();
+            int colIndex = selectedAlbumSongs.getSelectedColumn();
+            if (rowIndex >= 0 && colIndex >= 0) {
+
+                String selectedSong = (String) selectedAlbumSongs.getModel().getValueAt(rowIndex, 0);
+                String selectedSongDuration = (String) selectedAlbumSongs.getModel().getValueAt(rowIndex, 1);
+                playlistModel.insertRow(playlistModel.getRowCount(), new Object[]{selectedSong, selectedSongDuration});
+
+                playlistTable.addMouseListener(mL);
+
+                playlistTable.setModel(playlistModel);
+            }
+        }
+    }//GEN-LAST:event_AddSongToPlaylistMousePressed
+
+    private void removeSongFromPlaylistMousePressed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_removeSongFromPlaylistMousePressed
+        MouseListener mL = new MouseAdapter() {
+        };
+
+        playlistTable.getModel().addTableModelListener(new TableModelListener() {
+            @Override
+            public void tableChanged(TableModelEvent tme) {
+                if (playlistTable.getRowCount() == 0) {
+                    currentlyPlaying.setText(" ");
+                }
+            }
+
+        });
+
+        if (evt.getClickCount() >= 0);
+        {
+
+            int rowIndex = playlistTable.getSelectedRow();
+            int colIndex = playlistTable.getSelectedColumn();
+            if (rowIndex >= 0 && colIndex >= 0) {
+
+                playlistModel.removeRow(rowIndex);
+                currentlyPlaying.setText(" ");
+                playlistTable.addMouseListener(mL);
+
+                playlistTable.setModel(playlistModel);
+            }
+        }
+    }//GEN-LAST:event_removeSongFromPlaylistMousePressed
+
+    private void LoadAlbumCollectionMousePressed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_LoadAlbumCollectionMousePressed
 
         String fileName = null;// = "albums.txt";
 
@@ -326,211 +544,50 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
             }
         } catch (Exception e) {
             System.out.println("Error with Filename " + fileName + e);
-        }
+        } // TODO add your handling code here:
+    }//GEN-LAST:event_LoadAlbumCollectionMousePressed
 
+    private void playPlaylistMousePressed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_playPlaylistMousePressed
 
-    }//GEN-LAST:event_jButton1MouseClicked
-
-    private void albumsTableMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_albumsTableMouseClicked
-
-        MouseListener mL = new MouseAdapter() {
-        };
-
-        if (evt.getClickCount() >= 0);
-        {
-            if (tracksModel.getRowCount() >= 0) {
-                tracksModel.setRowCount(0);
-
-            }
-
-            int rowIndex = albumsTable.getSelectedRow();
-            int colIndex = albumsTable.getSelectedColumn();
-            if (rowIndex >= 0) {
-                String selectedAlbum = (String) albumsTable.getModel().getValueAt(rowIndex, colIndex);
-
-                List<String> trackList = ac.getAlbumByHeader(selectedAlbum).getTrackList();
-
-                for (int i = 0; i < trackList.size(); i++) {
-
-                    String tracksToSplit = trackList.get(i);
-                    String[] trackInformation = tracksToSplit.split("-");
-                    String songDuration = trackInformation[0];
-                    String songName = trackInformation[1];
-
-                    tracksModel.insertRow(tracksModel.getRowCount(), new Object[]{songName, songDuration});
-
-                    System.out.println(songDuration);
-                }
-            }
-            selectedAlbumSongs.addMouseListener(mL);
-            selectedAlbumSongs.setModel(tracksModel);
-        }
-    }//GEN-LAST:event_albumsTableMouseClicked
-
-    private void jButton2MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jButton2MouseClicked
-        MouseListener mL = new MouseAdapter() {
-        };
-
-        if (evt.getClickCount() >= 0);
-        {
-
-            int rowIndex = selectedAlbumSongs.getSelectedRow();
-            int colIndex = selectedAlbumSongs.getSelectedColumn();
-            if (rowIndex >= 0 && colIndex >= 0) {
-
-                String selectedSong = (String) selectedAlbumSongs.getModel().getValueAt(rowIndex, 0);
-                String selectedSongDuration = (String) selectedAlbumSongs.getModel().getValueAt(rowIndex, 1);
-                playlistModel.insertRow(playlistModel.getRowCount(), new Object[]{selectedSong, selectedSongDuration});
-
-                playlistTable.addMouseListener(mL);
-
-                playlistTable.setModel(playlistModel);
-            }
-        }
-    }//GEN-LAST:event_jButton2MouseClicked
-
-    private void removeSongFromPlaylistMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_removeSongFromPlaylistMouseClicked
-        MouseListener mL = new MouseAdapter() {
-        };
-
-        if (evt.getClickCount() >= 0);
-        {
-
-            int rowIndex = playlistTable.getSelectedRow();
-            int colIndex = playlistTable.getSelectedColumn();
-            if (rowIndex >= 0 && colIndex >= 0) {
-
-                playlistModel.removeRow(rowIndex);
-
-                playlistTable.addMouseListener(mL);
-
-                playlistTable.setModel(playlistModel);
-            }
-        }
-    }//GEN-LAST:event_removeSongFromPlaylistMouseClicked
-
-    private void playButtonMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_playButtonMouseClicked
-        MouseListener mL = new MouseAdapter() {
-        };
-        if (evt.getClickCount() >= 0);
-        {
-
-            int rowIndex = playlistTable.getSelectedRow();
-            int colIndex = playlistTable.getSelectedColumn();
-            if (rowIndex >= 0 && colIndex >= 0) {
-
-                String mp3filename = playlistTable.getModel().getValueAt(rowIndex, 0) + ".mp3";
-
-                playlistTable.getValueAt(rowIndex, 0);
-                System.out.println(playlistTable.getValueAt(rowIndex, 0));
-                mp3filename = mp3filename.replaceAll("\\s+", "");
-
-                String currentFolder = System.getProperty("user.dir");
-
-                File songToPlay = new File(currentFolder + "/music/" + mp3filename);
-                String mp3File = songToPlay.getAbsolutePath();
-
-                String[] displayMp3Name = mp3filename.split(".mp3");
-                String displayName = displayMp3Name[0];
-
-                //System.out.println(mp3File);
-                mp3.close();
-                mp3.play(mp3File);
-                currentlyPlaying.setText("Now Playing: " + displayName);
-                playlistTable.addMouseListener(mL);
-                playlistTable.setModel(playlistModel);
-
-            }
-        }
-    }//GEN-LAST:event_playButtonMouseClicked
-
-    private void jButtonSkipTrackMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jButtonSkipTrackMouseClicked
-
-        try {
-
-            int rowIndex = playlistTable.getSelectedRow();
-            //int rowCheck = playlistTable.getRowCount();
-            int colIndex = playlistTable.getSelectedColumn();
-            if (rowIndex >= 0 && colIndex >= 0) {
-
-                String mp3filename = playlistTable.getModel().getValueAt(rowIndex + 1, 0) + ".mp3";
-                int previousSong = rowIndex;
-
-                playlistTable.setRowSelectionInterval(rowIndex + 1, 0);
-                playlistTable.getSelectionModel().removeSelectionInterval(previousSong, 0);
-                System.out.println(mp3filename);
-
-                mp3filename = mp3filename.replaceAll("\\s+", "");
-
-                String currentFolder = System.getProperty("user.dir");
-
-                File songToPlay = new File(currentFolder + "/music/" + mp3filename);
-                String mp3File = songToPlay.getAbsolutePath();
-                System.out.println(mp3File);
-                mp3.close();
-                mp3.play(mp3File);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-
-    }//GEN-LAST:event_jButtonSkipTrackMouseClicked
-
-    private void jButtonPreviousTrackMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jButtonPreviousTrackMouseClicked
-        try {
-
-            int rowIndex = playlistTable.getSelectedRow();
-            int colIndex = playlistTable.getSelectedColumn();
-            if (rowIndex >= 0 && colIndex >= 0) {
-
-                String mp3filename = playlistTable.getModel().getValueAt(rowIndex - 1, 0) + ".mp3";
-
-                int previousSong = rowIndex;
-
-                playlistTable.getSelectionModel().removeSelectionInterval(previousSong, 0);
-                playlistTable.setRowSelectionInterval(rowIndex - 1, 0);
-
-                mp3filename = mp3filename.replaceAll("\\s+", "");
-
-                String currentFolder = System.getProperty("user.dir");
-
-                File songToPlay = new File(currentFolder + "/music/" + mp3filename);
-                String mp3File = songToPlay.getAbsolutePath();
-                System.out.println(mp3File);
-                mp3.close();
-                mp3.play(mp3File);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-    }//GEN-LAST:event_jButtonPreviousTrackMouseClicked
-
-    private void jButton4MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jButton4MouseClicked
-
-        //finds and returns all elements rows/columns of the Playlist table
+//finds and returns all elements rows/columns of the Playlist table
         if (playlistTable.getRowCount() == 0) {
             System.out.println("There are no Songs in the Playlist");
 
         } else if (playlistTable.getRowCount() != 0) {
             for (int row = 0; row < playlistModel.getRowCount(); row++) {
                 // for (int column = 0; column < playlistModel.getColumnCount(); column++) {
-                System.out.println("This playlist is made of the following songs \n" + playlistModel.getValueAt(row, 0));
+                System.out.println(playlistModel.getValueAt(row, 0));
             }
         }
-    }//GEN-LAST:event_jButton4MouseClicked
+        int selectedRow = playlistTable.getSelectedRow();
+        String mp3filename = (String) playlistModel.getValueAt(selectedRow, 0) + ".mp3";
+        mp3filename = mp3filename.replaceAll("\\s+", "");
+        String currentFolder = System.getProperty("user.dir");
 
-    private void playlistTableMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_playlistTableMouseClicked
-        int index = playlistTable.getSelectedRow();
-        String songName = (String) playlistTable.getModel().getValueAt(index, 0);
-        if (index >= 0) 
-        {
-            currentlyPlaying.setText("Selected: " + songName);
+        File songToPlay = new File(currentFolder + "/music/" + mp3filename);
+        String mp3File = songToPlay.getAbsolutePath();
+        mp3.close();
+        mp3.play(mp3File);
+        try {
+            System.out.println(mp3.fis.read());
+        } catch (IOException ex) {
+            Logger.getLogger(MusicApplicationGUI.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        try {
+            if (mp3.fis.read() <= 0) {
+                mp3.close();
+                mp3filename = (String) playlistModel.getValueAt(selectedRow + 1, 0);
+                File nextSongToPlay = new File(currentFolder + "/music/" + mp3filename);
+                mp3File = nextSongToPlay.getAbsolutePath();
+                mp3.play(mp3File);
+
+            }
+
+        } catch (IOException ex) {
+            Logger.getLogger(MusicApplicationGUI.class.getName()).log(Level.SEVERE, null, ex);
         }
 
-
-    }//GEN-LAST:event_playlistTableMouseClicked
+    }//GEN-LAST:event_playPlaylistMousePressed
 
     /**
      * @param args the command line arguments
@@ -576,11 +633,10 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton AddSongToPlaylist;
+    private javax.swing.JButton LoadAlbumCollection;
     private javax.swing.JTable albumsTable;
     private javax.swing.JLabel currentlyPlaying;
-    private javax.swing.JButton jButton1;
-    private javax.swing.JButton jButton2;
-    private javax.swing.JButton jButton4;
     private javax.swing.JButton jButton5;
     private javax.swing.JButton jButton6;
     private javax.swing.JButton jButtonPreviousTrack;
@@ -593,6 +649,7 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JButton playButton;
+    private javax.swing.JButton playPlaylist;
     private javax.swing.JTable playlistTable;
     private javax.swing.JButton removeSongFromPlaylist;
     private javax.swing.JTable selectedAlbumSongs;

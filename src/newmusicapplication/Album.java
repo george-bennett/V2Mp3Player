@@ -15,7 +15,7 @@ import java.util.List;
 public class Album implements Comparable<Album> {
 
     //private variables declared albumTitle, albumArtist, and a ArrayList of tracks
-    private String albumTitle;
+    private String albumTitle;   
     private String albumArtist;
     private ArrayList<Track> tracks;
     private String trackTitle;

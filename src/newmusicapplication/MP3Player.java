@@ -45,7 +45,7 @@ public class MP3Player {
 
     private String filename;
     private Player player;
-    private int stopped;
+    private int songFinished;
     //for multiple methods 
     FileInputStream fis;
     BufferedInputStream bis;
@@ -74,11 +74,10 @@ public class MP3Player {
                 player.close();
 
             }
-        } catch (Exception e){
-        
+        } catch (Exception e) {
+
         }
     }
-
 
 //pauses the currently playing song, so that it can be resumed
     public void pause() {
@@ -94,9 +93,6 @@ public class MP3Player {
     }
 //play or resume fuction
 
-    
-
-    
     public void play(String mp3filename) {
         try {
             fis = new FileInputStream(mp3filename);
@@ -150,6 +146,11 @@ public class MP3Player {
                 }
             }
         }.start();
+    }
+
+    public void checkSongFinished(){
+    
+    
     }
 
     // test MP3Player
