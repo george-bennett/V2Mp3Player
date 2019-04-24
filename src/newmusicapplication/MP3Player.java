@@ -148,10 +148,7 @@ public class MP3Player {
         }.start();
     }
 
-    public void checkSongFinished(){
-    
-    
-    }
+
 
     // test MP3Player
     public static void main(String[] args) {

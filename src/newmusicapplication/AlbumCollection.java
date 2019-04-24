@@ -47,7 +47,7 @@ public class AlbumCollection {
                 if (!line.contains(" - ")) {//means this is an album as the album does not contain a " - " as signalled by the !, albums are then added to the album collection
                     album = new Album(line);
                     albums.add(album);
-                  // Collections.sort(albums);
+                    // Collections.sort(albums);
                 } else { // there everything else is a track and tracks are then added to an album
                     Track track = new Track(line);
                     album.addTrack(track);
@@ -83,8 +83,16 @@ public class AlbumCollection {
         }
         return longestTrack;
     }
-// this is somewhat working, although 00:03:32 is not as intended. there are durations which are smaller.
 
+//    public Album getAlbumByTrack(String selectedSong) {
+//        Album selectedAlbum = new Album("", "");
+//        for (Album album : albums) {
+//            Track track = album.getAlbumByTrackName(selectedSong);
+//            if (track.equals(selectedSong));
+//        }
+//        return selectedAlbum;
+//    }
+// this is somewhat working, although 00:03:32 is not as intended. there are durations which are smaller.
     public Track getShortestTrack() {
 
         Track shortestTrack = new Track(new Duration(), "");
@@ -111,8 +119,8 @@ public class AlbumCollection {
         }
         return mostTracksAlbum;
     }
-//a method that gets Albums by Header (Unsure as to how this works or its purpose, but returns nothing in AlbumCollection.) 
 
+//a method that gets Albums by Header (Unsure as to how this works or its purpose, but returns nothing in AlbumCollection.) 
     public Album getAlbumByHeader(String header) {
         for (Album album : albums) {
             if (album.getHeader().equals(header)) {
@@ -121,8 +129,8 @@ public class AlbumCollection {
         }
         return null;
     }
-//a duration method that calculates durations together based on artist name eg every song made by Pink Floyd
 
+//a duration method that calculates durations together based on artist name eg every song made by Pink Floyd
     public Duration getDurationByArtist(String albumArtist) {
 
         Duration duration = new Duration();
@@ -177,6 +185,14 @@ public class AlbumCollection {
         return null;
     }
 
+    public Album getAlbumBySongTitle(String song) {
+        Album album = new Album("", "");
+        if (album.getTrackName().equals(song)) {
+            return album;
+        }
+
+        return album;
+    }
 
     public List<String> getAlbumHeaderList() {
         List<String> albumList = new ArrayList();
@@ -186,7 +202,6 @@ public class AlbumCollection {
         }
         return albumList;
     }
-
 
 //too string returning albums - using StringBuilder
     public String toString() {

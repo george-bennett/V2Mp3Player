@@ -6,9 +6,11 @@
 package newmusicapplication;
 
 import java.awt.Component;
+import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseListener;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
@@ -17,8 +19,13 @@ import java.util.List;
 import java.util.Spliterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.imageio.ImageIO;
 import javax.swing.DefaultListModel;
+import javax.swing.Icon;
+import javax.swing.ImageIcon;
+import javax.swing.JDialog;
 import javax.swing.JFileChooser;
+import javax.swing.JOptionPane;
 import javax.swing.JProgressBar;
 import javax.swing.ListSelectionModel;
 import javax.swing.event.ListSelectionListener;
@@ -38,7 +45,9 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
     DefaultTableModel playlistModel;
     AlbumCollection ac = new AlbumCollection();
     MP3Player mp3 = new MP3Player();
+    Album album;
     boolean songFinished = false;
+    JOptionPane errorMessage = new JOptionPane();
 
     /**
      * Creates new form MusicApplicationGUI
@@ -56,7 +65,6 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
         playlistTable.setRowSelectionAllowed(true);
         playlistTable.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
 
-       
     }
 
     /**
@@ -74,13 +82,14 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
         jScrollPane2 = new javax.swing.JScrollPane();
         selectedAlbumSongs = new javax.swing.JTable();
         jPanel1 = new javax.swing.JPanel();
+        albumImageLabel = new javax.swing.JLabel();
         jScrollPane3 = new javax.swing.JScrollPane();
         playlistTable = new javax.swing.JTable();
         AddSongToPlaylist = new javax.swing.JButton();
         removeSongFromPlaylist = new javax.swing.JButton();
         playPlaylist = new javax.swing.JButton();
         playButton = new javax.swing.JButton();
-        jButton5 = new javax.swing.JButton();
+        Pause = new javax.swing.JButton();
         jButton6 = new javax.swing.JButton();
         jButtonPreviousTrack = new javax.swing.JButton();
         jButtonSkipTrack = new javax.swing.JButton();
@@ -126,15 +135,23 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
 
         jPanel1.setBorder(javax.swing.BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.RAISED));
 
+        albumImageLabel.setBorder(javax.swing.BorderFactory.createLineBorder(new java.awt.Color(0, 0, 0)));
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 0, Short.MAX_VALUE)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(albumImageLabel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addContainerGap())
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 296, Short.MAX_VALUE)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(albumImageLabel, javax.swing.GroupLayout.DEFAULT_SIZE, 280, Short.MAX_VALUE)
+                .addContainerGap())
         );
 
         playlistTable.setModel(new javax.swing.table.DefaultTableModel(
@@ -142,7 +159,7 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
 
             },
             new String [] {
-                "Song", "Duration"
+                "Song", "Duration", "Album"
             }
         ));
         playlistTable.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -163,9 +180,6 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
         removeSongFromPlaylist.setFont(new java.awt.Font("Tahoma", 0, 14)); // NOI18N
         removeSongFromPlaylist.setText("Remove from Playlist");
         removeSongFromPlaylist.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                removeSongFromPlaylistMouseClicked(evt);
-            }
             public void mousePressed(java.awt.event.MouseEvent evt) {
                 removeSongFromPlaylistMousePressed(evt);
             }
@@ -186,9 +200,19 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
             }
         });
 
-        jButton5.setText("Pause");
+        Pause.setText("Pause");
+        Pause.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mousePressed(java.awt.event.MouseEvent evt) {
+                PauseMousePressed(evt);
+            }
+        });
 
         jButton6.setText("Stop");
+        jButton6.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseReleased(java.awt.event.MouseEvent evt) {
+                jButton6MouseReleased(evt);
+            }
+        });
 
         jButtonPreviousTrack.setText("Previous");
         jButtonPreviousTrack.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -235,13 +259,16 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 452, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(29, 29, 29)
+                        .addComponent(playPlaylist, javax.swing.GroupLayout.PREFERRED_SIZE, 200, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addContainerGap(922, Short.MAX_VALUE))
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 600, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                             .addGroup(layout.createSequentialGroup()
                                 .addComponent(playButton)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(jButton5)
+                                .addComponent(Pause)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(jButton6)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -249,17 +276,16 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(jButtonSkipTrack))
                             .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(currentlyPlaying, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
-                    .addComponent(playPlaylist, javax.swing.GroupLayout.PREFERRED_SIZE, 200, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addComponent(currentlyPlaying, javax.swing.GroupLayout.PREFERRED_SIZE, 321, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(46, 46, 46))))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(jScrollPane3, javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jScrollPane3)
+                    .addGroup(layout.createSequentialGroup()
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                                 .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 500, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -271,7 +297,7 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
                                 .addGap(18, 18, 18)
                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                                     .addComponent(playButton)
-                                    .addComponent(jButton5)
+                                    .addComponent(Pause)
                                     .addComponent(jButton6)
                                     .addComponent(jButtonPreviousTrack)
                                     .addComponent(jButtonSkipTrack))))
@@ -293,10 +319,6 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
-
-    private void removeSongFromPlaylistMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_removeSongFromPlaylistMouseClicked
-
-    }//GEN-LAST:event_removeSongFromPlaylistMouseClicked
 
     private void playButtonMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_playButtonMouseClicked
         MouseListener mL = new MouseAdapter() {
@@ -323,9 +345,25 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
                 //               String displayName = displayMp3Name[0];
                 String displayName = (String) playlistTable.getModel().getValueAt(rowIndex, 0);
                 //System.out.println(mp3File);
-                mp3.close();
-                mp3.play(mp3File);
-                currentlyPlaying.setText("Now Playing: " + displayName);
+                if (mp3.bis != null) {
+                    mp3.close();
+                }
+
+                if (mp3.bis == null) {
+                    mp3.play(mp3File);
+                    currentlyPlaying.setText("Now Playing: " + displayName);
+                } else {
+                    try {
+                        if (mp3.pauseLocation > 0) {
+                            mp3.resume();
+                            currentlyPlaying.setText("Resumed Playing: " + displayName);
+                        }
+
+                    } catch (Exception e) {
+                        Logger.getLogger(MusicApplicationGUI.class.getName()).log(Level.SEVERE, null, e);
+
+                    }
+                }
                 playlistTable.addMouseListener(mL);
                 playlistTable.setModel(playlistModel);
 
@@ -359,7 +397,6 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
                 mp3.close();
                 mp3.play(mp3File);
 
-                //   String displayName = (String) playlistTable.getModel().getValueAt(rowIndex + 1,0);
                 String mp3DisplayName = (String) playlistTable.getModel().getValueAt(rowIndex + 1, 0);
                 currentlyPlaying.setText("Now Playing: " + mp3DisplayName);
             }
@@ -403,6 +440,40 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
 
     }//GEN-LAST:event_jButtonPreviousTrackMouseClicked
 
+    private void setalbumImages() {
+        if (tracksModel.getRowCount() >= 0) {
+            tracksModel.setRowCount(0);
+        }
+
+        int rowIndex = albumsTable.getSelectedRow();
+        int colIndex = albumsTable.getSelectedColumn();
+        if (rowIndex >= 0) {
+            String selectedAlbum = (String) albumsTable.getModel().getValueAt(rowIndex, colIndex);
+
+            List<String> trackList = ac.getAlbumByHeader(selectedAlbum).getTrackList();
+
+            String albumImage;
+            String imageInformation = ac.getAlbumByHeader(selectedAlbum).getAlbumImageName();
+
+            String currentFolder = System.getProperty("user.dir");
+            File albumCover = new File(currentFolder + "/albumImages/" + imageInformation + ".jpg");
+
+            albumImage = albumCover.getAbsolutePath();
+
+            ImageIcon scaledAlbumCover = new ImageIcon(new ImageIcon(albumImage).getImage().getScaledInstance(albumImageLabel.getWidth(), albumImageLabel.getHeight(), Image.SCALE_SMOOTH));
+
+            File defaultCover = new File("albumImages/defaultAlbumCover.jpg");
+            String defaultImage = defaultCover.getAbsolutePath();
+            ImageIcon iconDefaultCover = new ImageIcon(new ImageIcon(defaultImage).getImage().getScaledInstance(albumImageLabel.getWidth(), albumImageLabel.getHeight(), Image.SCALE_SMOOTH));
+
+            if (scaledAlbumCover.getIconHeight() != -1) {
+                albumImageLabel.setIcon(scaledAlbumCover);
+            } else {
+                albumImageLabel.setIcon(iconDefaultCover);
+            }
+        }
+    }
+
     private void albumsTableMousePressed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_albumsTableMousePressed
 
         MouseListener mL = new MouseAdapter() {
@@ -418,10 +489,15 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
             int rowIndex = albumsTable.getSelectedRow();
             int colIndex = albumsTable.getSelectedColumn();
             if (rowIndex >= 0) {
+                
+                setalbumImages();
+                
                 String selectedAlbum = (String) albumsTable.getModel().getValueAt(rowIndex, colIndex);
 
                 List<String> trackList = ac.getAlbumByHeader(selectedAlbum).getTrackList();
 
+
+                //this loop displays the tracks in the associated table for each selected album
                 for (int i = 0; i < trackList.size(); i++) {
 
                     String tracksToSplit = trackList.get(i);
@@ -433,20 +509,36 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
 
                     System.out.println(songDuration);
                 }
+                
+                }
             }
             selectedAlbumSongs.addMouseListener(mL);
             selectedAlbumSongs.setModel(tracksModel);
-        }
+        
     }//GEN-LAST:event_albumsTableMousePressed
 
     private void playlistTableMousePressed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_playlistTableMousePressed
 
-        int index = playlistTable.getSelectedRow();
-        String songName = (String) playlistTable.getModel().getValueAt(index, 0);
-        if (index >= 0) {
+        int rowIndex = playlistTable.getSelectedRow();
+        int colIndex = playlistTable.getSelectedColumn();
+
+        String songName = (String) playlistTable.getModel().getValueAt(rowIndex, 0);
+        if (rowIndex >= 0) {
             currentlyPlaying.setText("Selected: " + songName);
         }
 
+        int albumsNumberOfRows = albumsTable.getRowCount();
+        int albumsNumberOfColumns = albumsTable.getColumnCount();
+
+        String currentFolder = System.getProperty("user.dir");
+        File albumCover = new File(currentFolder + "/albumCollections/newAlbums.txt");
+
+        //What i want to do
+        // on changing song, the album cover should change to approipate image
+        //Investigate Null pointer - ac collection is empty atm, how to transfer the created ac Collection via the load collection method
+     
+
+        
 
     }//GEN-LAST:event_playlistTableMousePressed
 
@@ -463,6 +555,13 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
 
                 String selectedSong = (String) selectedAlbumSongs.getModel().getValueAt(rowIndex, 0);
                 String selectedSongDuration = (String) selectedAlbumSongs.getModel().getValueAt(rowIndex, 1);
+                
+                
+                
+                
+                
+                
+                
                 playlistModel.insertRow(playlistModel.getRowCount(), new Object[]{selectedSong, selectedSongDuration});
 
                 playlistTable.addMouseListener(mL);
@@ -526,7 +625,7 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
                 for (String albumList : ac.getAlbumHeaderList()) {
                     //tabelModel.addElement(albumList);
                     tbModel.insertRow(tbModel.getRowCount(), new Object[]{albumList});
-
+                    
                 }
             } else if (albumsTable.getRowCount() >= 1) {
                 {
@@ -541,6 +640,7 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
 
                     }
                 }
+               
             }
         } catch (Exception e) {
             System.out.println("Error with Filename " + fileName + e);
@@ -589,6 +689,36 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
 
     }//GEN-LAST:event_playPlaylistMousePressed
 
+    private void PauseMousePressed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_PauseMousePressed
+
+        int rowIndex = playlistTable.getSelectedRow();
+        String displayName = (String) playlistTable.getModel().getValueAt(rowIndex, 0);
+
+        try {
+            mp3.pause();
+            currentlyPlaying.setText("Paused Playing: " + displayName);
+
+        } catch (Exception e) {
+            System.out.println(e);
+            JOptionPane.showMessageDialog(this, "There is no MP3 currently playing, please select an MP3 file first ", "Message - No Music File Selected", JOptionPane.ERROR_MESSAGE);
+
+        }
+    }//GEN-LAST:event_PauseMousePressed
+
+    private void jButton6MouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jButton6MouseReleased
+        try {
+            mp3.close();
+            //jTextAreaCurrentlyPlaying.setText("Stopped Playing ");
+
+        } catch (Exception e) {
+            System.out.println(e);
+
+            errorMessage.setVisible(true);
+        }
+
+
+    }//GEN-LAST:event_jButton6MouseReleased
+
     /**
      * @param args the command line arguments
      */
@@ -635,9 +765,10 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton AddSongToPlaylist;
     private javax.swing.JButton LoadAlbumCollection;
+    private javax.swing.JButton Pause;
+    private javax.swing.JLabel albumImageLabel;
     private javax.swing.JTable albumsTable;
     private javax.swing.JLabel currentlyPlaying;
-    private javax.swing.JButton jButton5;
     private javax.swing.JButton jButton6;
     private javax.swing.JButton jButtonPreviousTrack;
     private javax.swing.JButton jButtonSkipTrack;

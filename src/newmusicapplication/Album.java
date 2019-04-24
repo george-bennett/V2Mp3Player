@@ -15,7 +15,7 @@ import java.util.List;
 public class Album implements Comparable<Album> {
 
     //private variables declared albumTitle, albumArtist, and a ArrayList of tracks
-    private String albumTitle;   
+    private String albumTitle;
     private String albumArtist;
     private ArrayList<Track> tracks;
     private String trackTitle;
@@ -48,6 +48,10 @@ public class Album implements Comparable<Album> {
     //getter method to return AlbumTitle
     public String getAlbumTitle() {
         return albumTitle;
+    }
+
+    public String getTrackName() {
+        return trackTitle;
     }
 
     //getter method to return AlbumArtist
@@ -100,8 +104,8 @@ public class Album implements Comparable<Album> {
         }
         return longestTrack;
     }
-// an attempt at returning the shortest track - doesnt return what I wanted
 
+// an attempt at returning the shortest track - doesnt return what I wanted
     public Track getShortestTrack() {
 
         Track shortestTrack = new Track(new Duration(), "");
@@ -154,6 +158,15 @@ public class Album implements Comparable<Album> {
         return null;
     }
 
+    public String getTrackName(String selectedTrack) {
+        for (Track track : tracks) {
+            if (track.getTrackTitle().equals(selectedTrack)) {
+                return track.getTrackTitle();
+            }
+        }
+        return null;
+    }
+
 //test harness
     public static void main(String[] args) {
 
@@ -174,4 +187,5 @@ public class Album implements Comparable<Album> {
         }
         return trackList;
     }
+
 }
