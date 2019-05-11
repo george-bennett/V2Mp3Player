@@ -11,9 +11,13 @@ import java.awt.Font;
 import java.awt.Image;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileFilter;
@@ -22,12 +26,16 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Spliterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javafx.concurrent.Task;
+import javafx.scene.paint.Color;
 import javax.imageio.ImageIO;
 import javax.swing.DefaultListModel;
 import javax.swing.Icon;
@@ -37,6 +45,9 @@ import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.JProgressBar;
 import javax.swing.ListSelectionModel;
+import javax.swing.ProgressMonitor;
+import javax.swing.SwingWorker;
+import javax.swing.Timer;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.ListSelectionListener;
@@ -44,6 +55,14 @@ import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableModel;
+import javazoom.jl.player.Player;
+import org.jaudiotagger.audio.AudioFile;
+import org.jaudiotagger.audio.AudioFileIO;
+import org.jaudiotagger.audio.exceptions.CannotReadException;
+import org.jaudiotagger.audio.exceptions.InvalidAudioFrameException;
+import org.jaudiotagger.audio.exceptions.ReadOnlyFileException;
+import org.jaudiotagger.audio.mp3.MP3AudioHeader;
+import org.jaudiotagger.tag.TagException;
 
 /**
  *
@@ -51,27 +70,30 @@ import javax.swing.table.DefaultTableModel;
  */
 public class MusicApplicationGUI extends javax.swing.JFrame {
 
-    DefaultTableModel tbModel;
+    DefaultTableModel albumsTableModel;
     DefaultTableModel tracksModel;
     DefaultTableModel playlistModel;
     AlbumCollection ac = new AlbumCollection();
-    Task task;
     MP3Player mp3 = new MP3Player();
-    Album album;
     boolean songFinished = false;
     JOptionPane errorMessage = new JOptionPane();
+    String albumListFile = null;
+    private Task task;
 
     /**
      * Creates new form MusicApplicationGUI
      */
     public MusicApplicationGUI() {
         initComponents();
+        this.getContentPane().setBackground(java.awt.Color.LIGHT_GRAY);
+        currentlyPlaying.setBackground(java.awt.Color.white);
+
 //        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
 //        int width = (int) screenSize.getWidth();
 //        int height = (int) screenSize.getHeight();
 //        jPanel1.setSize(width, height);
 //        jPanel1.setMaximumSize(screenSize);
-        tbModel = (DefaultTableModel) albumsTable.getModel();
+        albumsTableModel = (DefaultTableModel) albumsTable.getModel();
         albumsTable.setDefaultEditor(Object.class, null);
 
         tracksModel = (DefaultTableModel) selectedAlbumSongs.getModel();
@@ -86,7 +108,12 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
 
         playlistModel = (DefaultTableModel) playlistTable.getModel();
         playlistTable.setRowSelectionAllowed(true);
-        playlistTable.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+
+        albumsTable.getTableHeader().setReorderingAllowed(false);
+        playlistTable.getTableHeader().setReorderingAllowed(false);
+        selectedAlbumSongs.getTableHeader().setReorderingAllowed(false);
+
+        songDurationLabel.setVisible(false);
 
     }
 
@@ -99,6 +126,7 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        jPanel2 = new javax.swing.JPanel();
         jScrollPane1 = new javax.swing.JScrollPane();
         albumsTable = new javax.swing.JTable();
         LoadAlbumCollection = new javax.swing.JButton();
@@ -116,20 +144,33 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
         jButton6 = new javax.swing.JButton();
         jButtonPreviousTrack = new javax.swing.JButton();
         jButtonSkipTrack = new javax.swing.JButton();
-        currentlyPlaying = new javax.swing.JLabel();
         musicLengthBar = new javax.swing.JProgressBar();
+        ClearAlbumCollection = new javax.swing.JButton();
+        songDurationLabel = new javax.swing.JLabel();
+        jPanel3 = new javax.swing.JPanel();
+        currentlyPlaying = new javax.swing.JLabel();
         jMenuBar1 = new javax.swing.JMenuBar();
         importMP3 = new javax.swing.JMenu();
         jMenuItem1 = new javax.swing.JMenuItem();
         jMenu2 = new javax.swing.JMenu();
 
+        javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
+        jPanel2.setLayout(jPanel2Layout);
+        jPanel2Layout.setHorizontalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 100, Short.MAX_VALUE)
+        );
+        jPanel2Layout.setVerticalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 100, Short.MAX_VALUE)
+        );
+
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("MP3 Application");
+        setBackground(new java.awt.Color(153, 255, 255));
         setCursor(new java.awt.Cursor(java.awt.Cursor.DEFAULT_CURSOR));
         setLocationByPlatform(true);
-        setMaximumSize(new java.awt.Dimension(1920, 1080));
-        setMinimumSize(new java.awt.Dimension(1600, 650));
-        setPreferredSize(new java.awt.Dimension(1600, 650));
+        setMinimumSize(new java.awt.Dimension(1620, 650));
 
         albumsTable.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
@@ -272,11 +313,40 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
             }
         });
 
+        musicLengthBar.setBorder(javax.swing.BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.RAISED));
+
+        ClearAlbumCollection.setFont(new java.awt.Font("Tahoma", 0, 14)); // NOI18N
+        ClearAlbumCollection.setText("Clear Album Collection");
+        ClearAlbumCollection.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mousePressed(java.awt.event.MouseEvent evt) {
+                ClearAlbumCollectionMousePressed(evt);
+            }
+        });
+
+        songDurationLabel.setFont(new java.awt.Font("Tahoma", 0, 18)); // NOI18N
+        songDurationLabel.setText("00:00:00  :  00:00:00");
+
+        jPanel3.setBorder(javax.swing.BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.RAISED));
+
         currentlyPlaying.setFont(new java.awt.Font("Nirmala UI Semilight", 1, 18)); // NOI18N
         currentlyPlaying.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        currentlyPlaying.setBorder(javax.swing.BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.RAISED));
 
-        musicLengthBar.setBorder(javax.swing.BorderFactory.createBevelBorder(javax.swing.border.BevelBorder.RAISED));
+        javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
+        jPanel3.setLayout(jPanel3Layout);
+        jPanel3Layout.setHorizontalGroup(
+            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel3Layout.createSequentialGroup()
+                .addGap(19, 19, 19)
+                .addComponent(currentlyPlaying, javax.swing.GroupLayout.PREFERRED_SIZE, 279, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        );
+        jPanel3Layout.setVerticalGroup(
+            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel3Layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(currentlyPlaying, javax.swing.GroupLayout.PREFERRED_SIZE, 42, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(14, Short.MAX_VALUE))
+        );
 
         importMP3.setText("File");
 
@@ -301,9 +371,12 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 300, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(LoadAlbumCollection, javax.swing.GroupLayout.PREFERRED_SIZE, 200, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(LoadAlbumCollection)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(ClearAlbumCollection, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
@@ -311,13 +384,14 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
                         .addGap(52, 52, 52)
                         .addComponent(removeSongFromPlaylist, javax.swing.GroupLayout.PREFERRED_SIZE, 200, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 452, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(playPlaylist, javax.swing.GroupLayout.PREFERRED_SIZE, 200, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(musicLengthBar, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addGroup(layout.createSequentialGroup()
                                 .addComponent(playButton)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -328,10 +402,12 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
                                 .addComponent(jButtonPreviousTrack)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(jButtonSkipTrack))
-                            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(currentlyPlaying, javax.swing.GroupLayout.PREFERRED_SIZE, 321, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(musicLengthBar, javax.swing.GroupLayout.PREFERRED_SIZE, 321, javax.swing.GroupLayout.PREFERRED_SIZE))))
-                .addGap(30, 30, 30))
+                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                                .addComponent(songDurationLabel)
+                                .addGap(62, 62, 62))
+                            .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                    .addComponent(playPlaylist, javax.swing.GroupLayout.PREFERRED_SIZE, 200, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -341,8 +417,8 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
                     .addComponent(jScrollPane3)
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(currentlyPlaying, javax.swing.GroupLayout.PREFERRED_SIZE, 51, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(playButton)
@@ -352,18 +428,20 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
                             .addComponent(jButtonSkipTrack))
                         .addGap(18, 18, 18)
                         .addComponent(musicLengthBar, javax.swing.GroupLayout.PREFERRED_SIZE, 35, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(0, 57, Short.MAX_VALUE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(songDurationLabel, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(0, 0, Short.MAX_VALUE))
                     .addComponent(jScrollPane2)
                     .addComponent(jScrollPane1))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGap(18, 18, 18)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                         .addComponent(removeSongFromPlaylist, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addComponent(playPlaylist, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                        .addComponent(LoadAlbumCollection, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(AddSongToPlaylist, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 50, Short.MAX_VALUE)))
-                .addGap(30, 30, 30))
+                    .addComponent(LoadAlbumCollection, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(AddSongToPlaylist, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(ClearAlbumCollection, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addGap(49, 49, 49))
         );
 
         pack();
@@ -400,6 +478,7 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
 
                 if (mp3.bis == null) {
                     mp3.play(mp3File);
+
                     currentlyPlaying.setText("Now Playing: " + displayName);
                 } else {
                     try {
@@ -414,27 +493,38 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
                     }
 
                 }
+
                 String songDuration = (String) playlistTable.getModel().getValueAt(rowIndex, 1);
-                
+
+                System.out.println(songDuration);
+                Duration duration = new Duration(songDuration.replaceAll(" ", ""));
+                duration.convertToSeconds();
+
+                System.out.println(duration.convertToSeconds());
                 Font myFont = new Font("Serif", Font.BOLD, 18);
-                
+
                 musicLengthBar.setFont(myFont);
-                musicLengthBar.setStringPainted(true);
+
                 //need to create a method to track time of song and update the string as song Progresses....
-                musicLengthBar.setString("0:00:00 " + " : " + songDuration);
-                
-                
+                songDurationLabel.setVisible(true);
+
+                //length of song in seconds
+                int intValueofSong = duration.convertToSeconds();
+
+                int lengthOfTask = intValueofSong;
+
+                songDurationLabel.setText("00:00:00" + " : " + " " + songDuration);
+
                 playlistTable.addMouseListener(mL);
                 playlistTable.setModel(playlistModel);
 
             }
+
         }
+
     }//GEN-LAST:event_playButtonMouseClicked
 
-    public void trackMusicLength(){
-    
-    }
-    
+
     private void jButtonSkipTrackMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jButtonSkipTrackMouseClicked
 
         try {
@@ -465,8 +555,9 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
 
                 currentlyPlaying.setText("Now Playing: " + mp3DisplayName);
                 String albumName = (String) playlistTable.getModel().getValueAt(rowIndex + 1, 2);
+                System.out.println(albumName);
                 String albumImage;
-                String imageInformation = ac.getAlbumByHeader(albumName).getAlbumImageName();
+                String imageInformation = ac.getAlbumByAlbumTitle(albumName).getAlbumImageName();
 
                 File albumCover = new File(currentFolder + "/albumImages/" + imageInformation + ".jpg");
 
@@ -524,7 +615,7 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
                 String albumName = (String) playlistTable.getModel().getValueAt(rowIndex - 1, 2);
 
                 String albumImage;
-                String imageInformation = ac.getAlbumByHeader(albumName).getAlbumImageName();
+                String imageInformation = ac.getAlbumByAlbumTitle(albumName).getAlbumImageName();
 
                 File albumCover = new File(currentFolder + "/albumImages/" + imageInformation + ".jpg");
 
@@ -552,40 +643,6 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
 
     }//GEN-LAST:event_jButtonPreviousTrackMouseClicked
 
-    private void setalbumImages() {
-        if (tracksModel.getRowCount() >= 0) {
-            tracksModel.setRowCount(0);
-        }
-
-        int rowIndex = albumsTable.getSelectedRow();
-        int colIndex = albumsTable.getSelectedColumn();
-        if (rowIndex >= 0) {
-            String selectedAlbum = (String) albumsTable.getModel().getValueAt(rowIndex, colIndex);
-
-            List<String> trackList = ac.getAlbumByHeader(selectedAlbum).getTrackList();
-
-            String albumImage;
-            String imageInformation = ac.getAlbumByHeader(selectedAlbum).getAlbumImageName();
-
-            String currentFolder = System.getProperty("user.dir");
-            File albumCover = new File(currentFolder + "/albumImages/" + imageInformation + ".jpg");
-
-            albumImage = albumCover.getAbsolutePath();
-
-            ImageIcon scaledAlbumCover = new ImageIcon(new ImageIcon(albumImage).getImage().getScaledInstance(albumImageLabel.getWidth(), albumImageLabel.getHeight(), Image.SCALE_SMOOTH));
-
-            File defaultCover = new File("albumImages/defaultAlbumCover.jpg");
-            String defaultImage = defaultCover.getAbsolutePath();
-            ImageIcon iconDefaultCover = new ImageIcon(new ImageIcon(defaultImage).getImage().getScaledInstance(albumImageLabel.getWidth(), albumImageLabel.getHeight(), Image.SCALE_SMOOTH));
-
-            if (scaledAlbumCover.getIconHeight() != -1) {
-                albumImageLabel.setIcon(scaledAlbumCover);
-            } else {
-                albumImageLabel.setIcon(iconDefaultCover);
-            }
-        }
-    }
-
     private void albumsTableMousePressed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_albumsTableMousePressed
 
         MouseListener mL = new MouseAdapter() {
@@ -593,6 +650,7 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
 
         if (evt.getClickCount() >= 0);
         {
+
             if (tracksModel.getRowCount() >= 0) {
                 tracksModel.setRowCount(0);
 
@@ -602,12 +660,16 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
             int colIndex = albumsTable.getSelectedColumn();
             if (rowIndex >= 0) {
 
-                String selectedAlbum = (String) albumsTable.getModel().getValueAt(rowIndex, colIndex);
+                String selectedAlbumHeader = (String) albumsTable.getModel().getValueAt(rowIndex, colIndex);
 
-                List<String> trackList = ac.getAlbumByHeader(selectedAlbum).getTrackList();
+                String selectedAlbumToSplit[] = selectedAlbumHeader.split(" : ");
+                String selectedAlbumArtist = selectedAlbumToSplit[0];
+                String selectedAlbumName = selectedAlbumToSplit[1];
+
+                List<String> trackList = ac.getAlbumByHeader(selectedAlbumHeader).getTrackList();
 
                 String albumImage;
-                String imageInformation = ac.getAlbumByHeader(selectedAlbum).getAlbumImageName();
+                String imageInformation = ac.getAlbumByHeader(selectedAlbumHeader).getAlbumImageName();
 
                 String currentFolder = System.getProperty("user.dir");
                 File albumCover = new File(currentFolder + "/albumImages/" + imageInformation + ".jpg");
@@ -629,10 +691,6 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
                     albumImageLabel.setIcon(iconDefaultCover);
                 }
 
-                //setalbumImages();
-                //String selectedAlbum = (String) albumsTable.getModel().getValueAt(rowIndex, colIndex);
-                // List<String> trackList = ac.getAlbumByHeader(selectedAlbum).getTrackList();
-                //this loop displays the tracks in the associated table for each selected album
                 for (int i = 0; i < trackList.size(); i++) {
 
                     String tracksToSplit = trackList.get(i);
@@ -640,20 +698,29 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
                     String songDuration = trackInformation[0];
                     String songName = trackInformation[1];
 
-                    tracksModel.insertRow(tracksModel.getRowCount(), new Object[]{songName, songDuration, selectedAlbum});
+                    tracksModel.insertRow(tracksModel.getRowCount(), new Object[]{songName, songDuration, selectedAlbumName});
 
                     System.out.println(songDuration);
                 }
-
             }
         }
-
+            albumsTable.getTableHeader().addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    int col = albumsTable.columnAtPoint(e.getPoint());
+                    String name = albumsTable.getColumnName(col);
+                    ac.sort();
+                    System.out.println("Clicked on AlbumHeader " + name + " " + col);
+                }
+            });
         selectedAlbumSongs.addMouseListener(mL);
         selectedAlbumSongs.setModel(tracksModel);
 
     }//GEN-LAST:event_albumsTableMousePressed
 
     private void playlistTableMousePressed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_playlistTableMousePressed
+
+        ac.readFile(albumListFile);
 
         int rowIndex = playlistTable.getSelectedRow();
         int colIndex = playlistTable.getSelectedColumn();
@@ -664,11 +731,12 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
         }
 
         String albumName = (String) playlistTable.getModel().getValueAt(rowIndex, 2);
+        System.out.println(ac.getAlbumByAlbumTitle(albumName));
 
         String currentFolder = System.getProperty("user.dir");
         String albumImage;
-        String imageInformation = ac.getAlbumByHeader(albumName).getAlbumImageName();
-
+        String imageInformation = ac.getAlbumByAlbumTitle(albumName).getAlbumImageName();
+        System.out.println(imageInformation);
         File albumCover = new File(currentFolder + "/albumImages/" + imageInformation + ".jpg");
 
         albumImage = albumCover.getAbsolutePath();
@@ -697,7 +765,6 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
 
         if (evt.getClickCount() >= 0);
         {
-
             int rowIndex = selectedAlbumSongs.getSelectedRow();
             int colIndex = selectedAlbumSongs.getSelectedColumn();
             if (rowIndex >= 0 && colIndex >= 0) {
@@ -731,7 +798,6 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
 
         if (evt.getClickCount() >= 0);
         {
-
             int rowIndex = playlistTable.getSelectedRow();
             int colIndex = playlistTable.getSelectedColumn();
             if (rowIndex >= 0 && colIndex >= 0) {
@@ -748,6 +814,8 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
     private void LoadAlbumCollectionMousePressed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_LoadAlbumCollectionMousePressed
 
         String fileName = null;// = "albums.txt";
+        albumListFile = null;
+        ac = new AlbumCollection();
 
         try {
             //this is a file chooser for albumCollection
@@ -758,37 +826,22 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
             openFC.showOpenDialog(c1);
 
             File albumFile = openFC.getSelectedFile();
-            fileName = albumFile.getAbsolutePath();
-
+            albumListFile = albumFile.getAbsolutePath();
             // create method in album collection that returns List<String> containing each albums header
             // for each item in the list, add it to the list model
             //this displays albums by header and adds elements until there are no more albums
+            albumsTableModel.setRowCount(0);
             if (albumsTable.getRowCount() == 0) {
-
-                ac.readFile(fileName);
+                ac.readFile(albumListFile);
                 for (String albumList : ac.getAlbumHeaderList()) {
-                    //tabelModel.addElement(albumList);
-                    tbModel.insertRow(tbModel.getRowCount(), new Object[]{albumList});
+
+                    albumsTableModel.insertRow(albumsTableModel.getRowCount(), new Object[]{albumList});
 
                 }
-            } else if (albumsTable.getRowCount() >= 1) {
-                {
-                    tbModel.setRowCount(0);
-                    System.out.println(tbModel.getRowCount());
-                }
-                ac.readFile(fileName);
-                if (albumsTable.getRowCount() == 0) {
-                    for (String albumList : ac.getAlbumHeaderList()) {
-                        //tabelModel.addElement(albumList);
-                        tbModel.insertRow(tbModel.getRowCount(), new Object[]{albumList});
-
-                    }
-                }
-
             }
         } catch (Exception e) {
             System.out.println("Error with Filename " + fileName + e);
-        } // TODO add your handling code here:
+        }
     }//GEN-LAST:event_LoadAlbumCollectionMousePressed
 
     private void playPlaylistMousePressed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_playPlaylistMousePressed
@@ -810,26 +863,22 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
 
         File songToPlay = new File(currentFolder + "/music/" + mp3filename);
         String mp3File = songToPlay.getAbsolutePath();
+        System.out.println(mp3File);
         mp3.close();
         mp3.play(mp3File);
-        try {
-            System.out.println(mp3.fis.read());
-        } catch (IOException ex) {
-            Logger.getLogger(MusicApplicationGUI.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        try {
-            if (mp3.fis.read() <= 0) {
-                mp3.close();
-                mp3filename = (String) playlistModel.getValueAt(selectedRow + 1, 0);
-                File nextSongToPlay = new File(currentFolder + "/music/" + mp3filename);
-                mp3File = nextSongToPlay.getAbsolutePath();
-                mp3.play(mp3File);
 
-            }
+        if (mp3.player.isComplete()) {
+            mp3.close();
+            mp3filename = (String) playlistModel.getValueAt(selectedRow + 1, 0);
+            File nextSongToPlay = new File(currentFolder + "/music/" + mp3filename + ".mp3");
+            mp3File = nextSongToPlay.getAbsolutePath();
+            mp3.play(mp3File);
 
-        } catch (IOException ex) {
-            Logger.getLogger(MusicApplicationGUI.class.getName()).log(Level.SEVERE, null, ex);
         }
+
+//        for (;;) {
+//            System.out.println(mp3.isSongFinished());
+//        }
 
     }//GEN-LAST:event_playPlaylistMousePressed
 
@@ -905,9 +954,12 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_jMenuItem1MousePressed
 
-    /**
-     * @param args the command line arguments
-     */
+    private void ClearAlbumCollectionMousePressed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_ClearAlbumCollectionMousePressed
+        if (albumsTableModel.getRowCount() >= 1) {
+            albumsTableModel.setRowCount(0);
+        }
+    }//GEN-LAST:event_ClearAlbumCollectionMousePressed
+
     public static void main(String args[]) {
         /* Set the Nimbus look and feel */
         //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
@@ -950,6 +1002,7 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton AddSongToPlaylist;
+    private javax.swing.JButton ClearAlbumCollection;
     private javax.swing.JButton LoadAlbumCollection;
     private javax.swing.JButton Pause;
     private javax.swing.JLabel albumImageLabel;
@@ -963,14 +1016,17 @@ public class MusicApplicationGUI extends javax.swing.JFrame {
     private javax.swing.JMenuBar jMenuBar1;
     private javax.swing.JMenuItem jMenuItem1;
     private javax.swing.JPanel jPanel1;
+    private javax.swing.JPanel jPanel2;
+    private javax.swing.JPanel jPanel3;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JScrollPane jScrollPane3;
-    private javax.swing.JProgressBar musicLengthBar;
+    public static javax.swing.JProgressBar musicLengthBar;
     private javax.swing.JButton playButton;
     private javax.swing.JButton playPlaylist;
     private javax.swing.JTable playlistTable;
     private javax.swing.JButton removeSongFromPlaylist;
     private javax.swing.JTable selectedAlbumSongs;
+    public static javax.swing.JLabel songDurationLabel;
     // End of variables declaration//GEN-END:variables
 }
